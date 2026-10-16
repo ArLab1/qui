@@ -16,7 +16,7 @@ import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/hooks/useAuth"
 import { navigateAfterAuth } from "@/lib/add-intent"
 import { api } from "@/lib/api"
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery } from "@tanstack/react-query"
 import { useForm } from "@tanstack/react-form"
 import { useNavigate } from "@tanstack/react-router"
 import { Fingerprint } from "lucide-react"
@@ -95,11 +95,18 @@ export function Login() {
     },
   })
 
-  const handleOIDCLogin = () => {
-    if (oidcConfig?.enabled && oidcConfig.authorizationUrl) {
-      window.location.href = oidcConfig.authorizationUrl
-    }
-  }
+  const oidcLogin = useMutation({
+    // Another login page can replace the state associated with the cached URL.
+    mutationFn: () => api.getOIDCConfig(),
+    onSuccess: (config) => {
+      if (config.enabled && config.authorizationUrl) {
+        window.location.href = config.authorizationUrl
+      } else {
+        toast.error(t("login.oidcFailed"))
+      }
+    },
+    onError: () => toast.error(t("login.oidcFailed")),
+  })
 
   // Show loading state while checking OIDC config
   if (oidcConfig === null) {
@@ -253,7 +260,8 @@ export function Login() {
                 variant="outline"
                 className="w-full"
                 size="lg"
-                onClick={handleOIDCLogin}
+                onClick={() => oidcLogin.mutate()}
+                disabled={oidcLogin.isPending}
               >
                 <Fingerprint className="mr-2 h-5 w-5" />
                 {t("login.openIdConnect")}

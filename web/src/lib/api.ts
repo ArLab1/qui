@@ -666,7 +666,7 @@ class ApiClient {
     issuerUrl: string
   }> {
     try {
-      return await this.request("/auth/oidc/config")
+      return await this.request("/auth/oidc/config", { cache: "no-store" })
     } catch {
       // Return default config if OIDC is not configured
       return {
